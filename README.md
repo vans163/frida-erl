@@ -7,7 +7,7 @@ wish to compile your own for your own enviroment, see way below.
 - Linux x86_64
 
 ## Usage
-How you may probably use this:  
+How you may use this:  
 
 ```
 Start your target environment, say windows vm.

@@ -9,9 +9,11 @@ terminate(_R, _S) -> ok.
 
 start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-%frida_example:start_link().
-%erlang:process_info(list_to_pid("<0.122.0>")).
+%{ok, Pid} = frida_example:start_link().
+%erlang:process_info(Pid).
+%Pid ! {post_message, <<"hi">>}.
 
+-define(PID, 2280).
 -define(SCRIPT, 
 <<"
     console.log('hi');
@@ -27,10 +29,20 @@ start_link() -> gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
         }
     });*/
 
-    //recv('eval', function onMessage(scriptcode) { console.log('pokeBack'); });
-    //recv('eval', function onMessage(scriptcode) { send(scriptcode); });
+    function onEval(arg) {
+        try {
+            res = eval(arg.payload);
+            console.log(res);
+        } catch(err) {
+            console.log(err);
+        }
+        recv('eval', onEval);
+    }
+    recv('eval', onEval);
 "/utf8>>
 ).
+
+
 
 init([]) ->
     io:format("~p: Started!~n", [?MODULE]),
@@ -42,7 +54,7 @@ init([]) ->
     Dev = frida:get_device_by_id(DevMan,  <<"tcp@192.168.6.11:15100">>),
     io:format("2\n"),
     %Pid = frida:get_pid_by_name(Dev, <<"notepad.exe">>),
-    Pid = 2972,
+    Pid = ?PID,
     io:format("3\n"),
     {ok, Session} = frida_nif:device_attach(Dev, Pid),
     io:format("4\n"),
@@ -72,10 +84,14 @@ handle_info(check_script, S) ->
             io:format("~p: New Script running~n", [?MODULE]),
             {noreply, S#{script=> NewScript, script_hash=> NewScriptHash}}
     end;
-    
-handle_info({post_message, Msg}, S) ->
+
+handle_info({eval, Javascript}, S) ->
+    self() ! {post_message, Javascript},
+    {noreply, S};
+
+handle_info({post_message, Payload}, S) ->
     Script = maps:get(script, S),
-    ok = frida_nif:script_post(Script, <<"{\"type\": \"eval\"}"/utf8, 0>>, <<"two">>),
+    ok = frida_nif:script_post(Script, <<"{\"type\": \"eval\", \"payload\": \"", Payload/binary, "\"}"/utf8, 0>>, <<"two">>),
     {noreply, S};
 
 %"{\"type\":\"log\",\"level\":\"info\",\"payload\":\"hiagain2\"}"
