@@ -9,37 +9,13 @@ wish to compile your own for your own enviroment, see way below.
 ## Usage
 How you may probably use this:  
 
-```erlang
-%Start your target environment, say windows vm.
-%Download frida-server only (https://github.com/frida/frida/releases) and run in cmd.exe
+```
+Start your target environment, say windows vm.
+Download frida-server only (https://github.com/frida/frida/releases) and run in cmd.exe
 
-%> frida-server -l 0.0.0.0:15100
+> frida-server -l 0.0.0.0:15100
 
-%On your host environment do the following:
-
-ok = frida_nif:init(),
-DevMan = frida_nif:device_manager_new(),
-
-frida_nif:device_manager_add_remote_device(DevMan, <<"192.168.6.11:15100">>),
-Dev = get_device_by_id(DevMan,  <<"tcp@192.168.6.11:15100">>),
-
-Pid = get_pid_by_name(Dev, <<"notepad.exe">>),
-{ok, Session} = frida_nif:device_attach(Dev, Pid),
-
-{ok, ErlFridaScript} = run_script(Session,  
-    <<"
-    console.log('hi');
-    Interceptor.attach(Module.findExportByName(null, 'GetMessage'), {
-        onEnter: function (args) {
-            console.log('[*] GetMessage(\"' + Memory.readUtf8String(args[0]) + '\")');
-        }
-    });
-    Interceptor.attach(Module.findExportByName(null, 'DispatchMessage'), {
-        onEnter: function (args) {
-            console.log('[*] DispatchMessage(' + args[0].toInt32() + ')');
-        }
-    });
-    "/utf8, 0>>).
+On your host environment see frida_example.erl
 ```
 
 ## API

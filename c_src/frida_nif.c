@@ -552,23 +552,14 @@ static ERL_NIF_TERM script_post(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
 }
 
 /* Extra? */
-static ErlNifEnv* my_temp_env;
-static ErlNifPid my_temp_pid;
-static GMainLoop* loop = NULL;
 static void on_message(FridaScript* script, const gchar* message, GBytes* data, gpointer user_data)
 {
-    printf("msg %d %lu\n", strlen(message), &my_temp_pid);
-    //ErlNifEnv* env = (ErlNifEnv*)user_data;
-    //ErlNifPid* my_pid = (ErlNifPid*)user_data;
-    ErlNifEnv* env = my_temp_env;
-    ErlNifEnv* msg_env = enif_alloc_env();
-    ErlNifEnv* msg_env2 = enif_alloc_env();
-    env = msg_env;
+    ErlNifPid* my_pid = (ErlNifPid*)user_data;
 
     ErlNifBinary bin_message;
     enif_alloc_binary(strlen(message), &bin_message);
     memcpy(bin_message.data, message, strlen(message));
-/*
+
     ErlNifBinary bin_data;
     if (data == NULL) {
         enif_alloc_binary(0, &bin_data);
@@ -578,25 +569,17 @@ static void on_message(FridaScript* script, const gchar* message, GBytes* data, 
         memcpy(bin_data.data, (char*)g_bytes_get_data(data, &data_size), data_size);
     }
 
-    ERL_NIF_TERM term = enif_make_tuple4(env, 
-        mk_atom(env, "script_message"), 
-        enif_make_uint64(env, (unsigned long)script),
-        enif_make_binary(env, &bin_message),
-        enif_make_binary(env, &bin_data)
+    ErlNifEnv* msg_env = enif_alloc_env();
+
+    ERL_NIF_TERM term = enif_make_tuple4(msg_env, 
+        mk_atom(msg_env, "script_message"), 
+        enif_make_uint64(msg_env, (unsigned long)script),
+        enif_make_binary(msg_env, &bin_message),
+        enif_make_binary(msg_env, &bin_data)
     );
-*/
+
     //Threadsafe??
-    //enif_send(env, &my_temp_pid, NULL, term);
-    //enif_send(NULL, &my_temp_pid, msg_env, enif_make_int(msg_env, 5454));
-    //enif_send(NULL, &my_temp_pid, msg_env, mk_atom(msg_env, "okk"));
-    //enif_send(NULL, &my_temp_pid, msg_env, enif_make_binary(msg_env, &bin_message));
-
-    //enif_clear_env(msg_env);
-    enif_send(my_temp_env, &my_temp_pid, msg_env, mk_atom(msg_env, "okk"));
-    enif_clear_env(msg_env);
-
-    //msg_env = enif_alloc_env();
-    enif_send(my_temp_env, &my_temp_pid, msg_env, mk_atom(msg_env, "aaokk"));
+    enif_send(NULL, my_pid, msg_env, term);
     enif_free_env(msg_env);
 }
 
@@ -604,61 +587,14 @@ static ERL_NIF_TERM connect_signal_message(ErlNifEnv* env, int argc, const ERL_N
     unsigned long p_FridaScript;
     if (!enif_get_ulong(env, argv[0], &p_FridaScript))
         return mk_error(env, "not_a_number");
-    ErlNifPid my_pid;
-    enif_self(env, &my_pid);
+    ErlNifPid pid;
+    if (!enif_get_local_pid(env, argv[1], &pid))
+        return mk_error(env, "not_a_pid");
 
-    my_temp_env = env;
-    my_temp_pid = my_pid;
+    //This leaks, since we dont know when to clean, screw it?
+    ErlNifPid* p_Pid = g_slice_dup(ErlNifPid, &pid);
 
-    g_signal_connect((FridaScript*)p_FridaScript, "message", G_CALLBACK (on_message), NULL);
-    return mk_atom(env, "ok");
-}
-
-pthread_t loop_thread;
-ErlDrvTid loop_thread_tid;
-void* loop_thread_func(void* context) {
-
-    ErlNifEnv* msg_env = enif_alloc_env();
-    enif_send(my_temp_env, &my_temp_pid, msg_env, mk_atom(msg_env, "okk2"));
-    enif_clear_env(msg_env);
-    enif_send(my_temp_env, &my_temp_pid, msg_env, mk_atom(msg_env, "okk"));
-    enif_clear_env(msg_env);
-    enif_send(my_temp_env, &my_temp_pid, msg_env, mk_atom(msg_env, "okk2"));
-    enif_free_env(msg_env);
-
-    return NULL;
-    GMainLoop* p_Loop = (GMainLoop*)context;
-    printf("loop running\n");
-    g_main_loop_run ((GMainLoop*)p_Loop);
-    printf("loop stop\n");
-    return NULL;
-}
-
-static ERL_NIF_TERM create_loop(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
-    loop = g_main_loop_new (frida_get_main_context(), TRUE);
-
-    pthread_create(&loop_thread, NULL, &loop_thread_func, loop);
-    //erl_drv_thread_create("looper", &loop_thread_tid, &loop_thread_func, loop, NULL);
-
-    return enif_make_uint64(env, (unsigned long)loop);
-}
-static ERL_NIF_TERM run_loop(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
-    unsigned long p_Loop;
-    if (!enif_get_ulong(env, argv[0], &p_Loop))
-        return mk_error(env, "not_a_number");
-
-    if (g_main_loop_is_running((GMainLoop*)p_Loop))
-        g_main_loop_run ((GMainLoop*)p_Loop);
-    
-    return mk_atom(env, "ok");
-}
-static ERL_NIF_TERM quit_loop(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
-    unsigned long p_Loop;
-    if (!enif_get_ulong(env, argv[0], &p_Loop))
-        return mk_error(env, "not_a_number");
-
-    g_main_loop_quit((GMainLoop*)p_Loop);
-    
+    g_signal_connect((FridaScript*)p_FridaScript, "message", G_CALLBACK (on_message), p_Pid);
     return mk_atom(env, "ok");
 }
 
@@ -732,10 +668,7 @@ static ErlNifFunc nif_funcs[] = {
     {"script_post", 3, script_post},
 
     /* Extra? */
-    {"connect_signal_message", 1, connect_signal_message},
-    {"create_loop", 0, create_loop},
-    {"run_loop", 1, run_loop},
-    {"quit_loop", 1, quit_loop},
+    {"connect_signal_message", 2, connect_signal_message},
 };
 
 

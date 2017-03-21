@@ -79,7 +79,4 @@ script_unload(_) -> "NIF library not loaded".
 script_post(_,_,_) -> "NIF library not loaded".
 
 %Extra?
-connect_signal_message(_) -> "NIF library not loaded".
-create_loop() -> "NIF library not loaded".
-run_loop(_) -> "NIF library not loaded".
-quit_loop(_) -> "NIF library not loaded".
+connect_signal_message(_,_) -> "NIF library not loaded".

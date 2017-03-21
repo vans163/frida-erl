@@ -33,54 +33,10 @@ get_pid_by_name(Dev, ProcName) when is_binary(ProcName) ->
             undefined
     end.
 
+run_script(Session, ScriptBin) ->    
+    {ok, Script} = frida_nif:session_create_script(Session, <<"default_script", 0>>, <<ScriptBin/binary, 0>>),
 
-test() ->
-    ok = frida_nif:init(),
-    DevMan = frida_nif:device_manager_new(),
-    frida_nif:device_manager_add_remote_device(DevMan, <<"192.168.6.11:15100">>),
-    io:format("1\n"),
-    Dev = get_device_by_id(DevMan,  <<"tcp@192.168.6.11:15100">>),
-    io:format("2\n"),
-    Pid = get_pid_by_name(Dev, <<"notepad.exe">>),
-    io:format("3\n"),
-    {ok, Session} = frida_nif:device_attach(Dev, Pid),
-    io:format("4\n"),
-
-    {ok, ErlFridaScript} = run_script(Session,  
-        <<"
-        console.log('hi');
-        console.log('bye');
-        setTimeout(function(){ console.log('Hello'); }, 3000);
-        setTimeout(function(){ console.log('Hello2'); }, 2000);
-        //console.log('bye');
-        /*Interceptor.attach(Module.findExportByName(null, 'open'), {
-            onEnter: function (args) {
-                console.log('[*] open(\"' + Memory.readUtf8String(args[0]) + '\")');
-            }
-        });
-        Interceptor.attach(Module.findExportByName(null, 'close'), {
-            onEnter: function (args) {
-                console.log('[*] close(' + args[0].toInt32() + ')');
-            }
-        });*/
-        "/utf8, 0>>).
-
-run_script(Session, ScriptBin) ->
-    {ok, Script} = frida_nif:session_create_script(Session, <<"default_script", 0>>, ScriptBin),
-
-    frida_nif:connect_signal_message(Script),
+    frida_nif:connect_signal_message(Script, self()),
     frida_nif:script_load(Script),
 
-    Loop = frida_nif:create_loop(),
-    %LoopPid = spawn(fun()->  
-    %    io:format("start loop~n"),
-    %    frida_nif:run_loop(Loop),
-    %    io:format("loop_done~n")
-    %end),
-
-    %frida_script_unload_sync (script, NULL),
-
-    {ok, Loop}.
-
-    
-%receive X-> X after 1 -> ok end.
+    Script.
