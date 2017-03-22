@@ -1,30 +1,15 @@
 #include "erl_nif.h"
-#include "erl_driver.h"
 #include "frida-core.h"
 
 #include <stdio.h>
 #include <stdlib.h>
-
-#include <errno.h>
-
-//for read/write
-#include <unistd.h>
-
-//for memset
 #include <string.h>
-
-#include <sys/types.h>
-#include <fcntl.h>
 
 ERL_NIF_TERM mk_atom(ErlNifEnv* env, const char* atom)
 {
     ERL_NIF_TERM ret;
-
     if(!enif_make_existing_atom(env, atom, &ret, ERL_NIF_LATIN1))
-    {
         return enif_make_atom(env, atom);
-    }
-
     return ret;
 }
 
