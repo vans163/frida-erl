@@ -12,8 +12,15 @@ load_nif() ->
         P ->
             P
     end,
-    FullPath = filename:join([Path, "build", "frida_nif_linux_x86_64"]),
-    erlang:load_nif(FullPath, 0).
+    NifName = case os:type() of
+        {win32, nt} -> <<"frida_nif_win_x86_64">>;
+        {unix, linux} -> <<"frida_nif_linux_x86_64">> 
+    end,
+    FullPath = filename:join([Path, "build", NifName]),
+    
+    Res = erlang:load_nif(FullPath, 0),
+    io:format("wtf ~p~n", [Res]),
+    Res.
 
 %/* Library lifetime */
 init() -> "NIF library not loaded".

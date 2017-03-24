@@ -5,6 +5,8 @@ Erlang bindings for frida-core
 There is a pre-compiled nif shipped with the bindings, if you
 wish to compile your own for your own enviroment, see way below.
 - Linux x86_64
+- Windows i386
+- Windows x86_64 (i386 build)
 
 ## Usage
 How you may use this:  
