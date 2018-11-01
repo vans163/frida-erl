@@ -23,14 +23,9 @@ get_device_by_id(DevMan, Id) ->
     end.
 
 get_pid_by_name(Dev, ProcName) when is_binary(ProcName) ->
-    io:format("pid_by_name_start\n"),
-    case frida_nif:device_get_process_by_name(Dev, ProcName) of
-        {ok, Proc} -> 
-            io:format("pid_by_name_end~n"),
-            frida_nif:process_get_pid(Proc);
-        _ -> 
-            io:format("pid_by_name_end~n"),
-            undefined
+    case frida_nif:device_get_process_by_name(Dev, ProcName, 2) of
+        {ok, Proc} -> frida_nif:process_get_pid(Proc);
+        _ -> undefined
     end.
 
 run_script(Session, ScriptBin) ->    

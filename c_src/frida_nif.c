@@ -1569,6 +1569,9 @@ static ErlNifFunc nif_funcs[] = {
     {"file_monitor_get_path", 1, file_monitor_get_path},
     {"file_monitor_enable", 1, file_monitor_enable},
     {"file_monitor_disable", 1, file_monitor_disable},
+
+    /* Extra? */
+    {"connect_signal_message", 2, connect_signal_message},
 };
 
 ERL_NIF_INIT(frida_nif, nif_funcs, NULL, NULL, &upgrade, NULL)

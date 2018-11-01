@@ -16,7 +16,7 @@ load_nif() ->
         {win32, nt} -> <<"frida_nif_win_x86_64">>;
         {unix, linux} -> <<"frida_nif_linux_x86_64">> 
     end,
-    FullPath = filename:join([Path, "build", NifName]),
+    FullPath = filename:join([Path, NifName]),
     
     Res = erlang:load_nif(FullPath, 0),
     Res.
@@ -179,3 +179,6 @@ file_monitor_new(_) -> "NIF library not loaded".
 file_monitor_get_path(_) -> "NIF library not loaded".
 file_monitor_enable(_) -> "NIF library not loaded".
 file_monitor_disable(_) -> "NIF library not loaded".
+
+%Extra?
+connect_signal_message(_,_) -> "NIF library not loaded".

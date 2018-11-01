@@ -49,9 +49,9 @@ init([]) ->
 
     ok = frida_nif:init(),
     DevMan = frida_nif:device_manager_new(),
-    frida_nif:device_manager_add_remote_device(DevMan, <<"192.168.6.11:15100">>),
+    frida_nif:device_manager_add_remote_device(DevMan, <<"127.0.0.1:5555">>),
     io:format("1\n"),
-    Dev = frida:get_device_by_id(DevMan,  <<"tcp@192.168.6.11:15100">>),
+    Dev = frida:get_device_by_id(DevMan, <<"tcp@127.0.0.1:5555">>),
     io:format("2\n"),
     %Pid = frida:get_pid_by_name(Dev, <<"notepad.exe">>),
     Pid = ?PID,
